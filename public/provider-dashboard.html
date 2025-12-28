@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Provider Dashboard - Booking System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { 
+            background: #4a6fa5; 
+            color: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin-bottom: 30px;
+            position: relative;
+        }
+        h1 { margin-bottom: 10px; display: inline-block; }
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 8px 15px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+        .status { display: flex; gap: 20px; margin-bottom: 30px; }
+        .status-card { flex: 1; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; background: #e0e0e0; border: none; border-radius: 5px; cursor: pointer; }
+        .tab.active { background: #4a6fa5; color: white; }
+        .content { display: none; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .content.active { display: block; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f2f2f2; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 20px; background: #4a6fa5; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #3a5a80; }
+        .success { color: green; }
+        .error { color: red; }
+        .loading { color: #666; font-style: italic; }
+        .actions { display: flex; gap: 10px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>👨‍⚕️ Provider Dashboard</h1>
+            <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+            <p id="provider-info">Welcome, Provider</p>
+        </header>
+
+        <div class="status">
+            <div class="status-card">
+                <h3>Appointments</h3>
+                <p id="appointment-count" class="loading">Loading...</p>
+            </div>
+            <div class="status-card">
+                <h3>Services</h3>
+                <p id="service-count" class="loading">Loading...</p>
+            </div>
+            <div class="status-card">
+                <h3>Available Slots</h3>
+                <p id="slot-count" class="loading">Loading...</p>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('appointments')">📅 Appointments</button>
+            <button class="tab" onclick="switchTab('availability')">⏰ Manage Availability</button>
+            <button class="tab" onclick="switchTab('services')">💼 My Services</button>
+            <button class="tab" onclick="switchTab('add-slot')">➕ Add Time Slot</button>
+        </div>
+
+        <!-- APPOINTMENTS TAB -->
+        <div id="appointments" class="content active">
+            <h2>Today's Appointments</h2>
+            <div id="appointments-list">Loading appointments...</div>
+        </div>
+
+        <!-- AVAILABILITY TAB -->
+        <div id="availability" class="content">
+            <h2>Your Availability Schedule</h2>
+            <div id="availability-list">Loading availability...</div>
+        </div>
+
+        <!-- SERVICES TAB -->
+        <div id="services" class="content">
+            <h2>Your Services</h2>
+            <div class="actions">
+                <button onclick="showAddServiceForm()">➕ Add New Service</button>
+            </div>
+            <div id="services-list">Loading services...</div>
+        </div>
+
+        <!-- ADD SLOT TAB -->
+        <div id="add-slot" class="content">
+            <h2>Add New Time Slot</h2>
+            <form id="add-slot-form">
+                <div class="form-group">
+                    <label for="service-select">Select Service:</label>
+                    <select id="service-select" required>
+                        <option value="">Loading services...</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="slot-date">Date:</label>
+                    <input type="date" id="slot-date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="start-time">Start Time:</label>
+                    <input type="time" id="start-time" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="end-time">End Time:</label>
+                    <input type="time" id="end-time" required>
+                </div>
+                
+                <button type="submit">➕ Add Time Slot</button>
+                <div id="add-slot-result"></div>
+            </form>
+        </div>
+
+        <div style="margin-top: 30px; padding: 20px; background: white; border-radius: 10px;">
+            <h2>API Response</h2>
+            <pre id="output" style="background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 200px; overflow: auto;">
+Click tabs to see actions...
+            </pre>
+        </div>
+    </div>
+
+    <script>
+        let providerToken = '';
+        let providerId = '';
+        let providerServices = [];
+
+        // Check if already logged in
+        window.onload = function() {
+            const savedToken = localStorage.getItem('providerToken');
+            if (savedToken) {
+                providerToken = savedToken;
+                loadProviderData();
+            } else {
+                // Try to auto-login with existing provider
+                loginProvider();
+            }
+        };
+
+        async function loginProvider() {
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        email: 'provider@test.com',
+                        password: 'test123'
+                    })
+                });
+                
+                const data = await response.json();
+                showOutput(data);
+                
+                if (data.success) {
+                    providerToken = data.token;
+                    providerId = data.user.id;
+                    localStorage.setItem('providerToken', providerToken);
+                    document.getElementById('provider-info').innerHTML = 
+                        `Welcome, <strong>${data.user.name}</strong> | ${data.user.email}`;
+                    loadProviderData();
+                }
+            } catch (error) {
+                showOutput({error: error.message});
+            }
+        }
+
+        async function loadProviderData() {
+            try {
+                // Load appointments
+                const appsRes = await fetch('http://localhost:3000/api/bookings/provider-appointments', {
+                    headers: {'Authorization': `Bearer ${providerToken}`}
+                });
+                const appointments = await appsRes.json();
+                
+                if (appointments.success) {
+                    document.getElementById('appointment-count').innerHTML = 
+                        `<span class="success">${appointments.count} appointments</span>`;
+                    displayAppointments(appointments.appointments);
+                }
+
+                // Load provider's services
+                const servicesRes = await fetch('http://localhost:3000/api/services/provider', {
+                    headers: {'Authorization': `Bearer ${providerToken}`}
+                });
+                const services = await servicesRes.json();
+                
+                if (services.success) {
+                    providerServices = services.services;
+                    document.getElementById('service-count').innerHTML = 
+                        `<span class="success">${services.count} services</span>`;
+                    displayServices(services.services);
+                    populateServiceSelect(services.services);
+                }
+
+                // Load availability
+                const availRes = await fetch('http://localhost:3000/api/availability/provider', {
+                    headers: {'Authorization': `Bearer ${providerToken}`}
+                });
+                const availability = await availRes.json();
+                
+                if (availability.success) {
+                    document.getElementById('slot-count').innerHTML = 
+                        `<span class="success">${availability.count} slots</span>`;
+                    displayAvailability(availability.availability);
+                }
+
+            } catch (error) {
+                showOutput({error: error.message});
+            }
+        }
+
+        function displayAppointments(appointments) {
+            const container = document.getElementById('appointments-list');
+            if (appointments.length === 0) {
+                container.innerHTML = '<p>No appointments yet.</p>';
+                return;
+            }
+
+            let html = '<table>';
+            html += '<tr><th>Customer</th><th>Service</th><th>Date</th><th>Time</th><th>Status</th></tr>';
+            
+            appointments.forEach(apt => {
+                html += `
+                    <tr>
+                        <td>${apt.customer_name}<br><small>${apt.customer_email}</small></td>
+                        <td>${apt.service_name}<br><small>$${apt.price}</small></td>
+                        <td>${new Date(apt.booking_date).toLocaleDateString()}</td>
+                        <td>${apt.starttime} - ${apt.endtime}</td>
+                        <td><span class="success">${apt.status}</span></td>
+                    </tr>
+                `;
+            });
+            
+            html += '</table>';
+            container.innerHTML = html;
+        }
+
+        function displayAvailability(slots) {
+            const container = document.getElementById('availability-list');
+            if (slots.length === 0) {
+                container.innerHTML = '<p>No availability slots set. Add some!</p>';
+                return;
+            }
+
+            let html = '<table>';
+            html += '<tr><th>Service</th><th>Date</th><th>Time</th><th>Price</th><th>Status</th></tr>';
+            
+            slots.forEach(slot => {
+                html += `
+                    <tr>
+                        <td>${slot.service_name}</td>
+                        <td>${new Date(slot.date).toLocaleDateString()}</td>
+                        <td>${slot.starttime} - ${slot.endtime}</td>
+                        <td>$${slot.price}</td>
+                        <td>${slot.isavailable ? '<span class="success">Available</span>' : '<span class="error">Booked</span>'}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</table>';
+            container.innerHTML = html;
+        }
+
+        function displayServices(services) {
+            const container = document.getElementById('services-list');
+            if (services.length === 0) {
+                container.innerHTML = '<p>No services yet. Add your first service!</p>';
+                return;
+            }
+
+            let html = '<table>';
+            html += '<tr><th>Service Name</th><th>Description</th><th>Price</th><th>Location</th></tr>';
+            
+            services.forEach(service => {
+                html += `
+                    <tr>
+                        <td><strong>${service.name}</strong></td>
+                        <td>${service.description}</td>
+                        <td>$${service.price}</td>
+                        <td>${service.location_name || 'Not specified'}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</table>';
+            container.innerHTML = html;
+        }
+
+        function populateServiceSelect(services) {
+            const select = document.getElementById('service-select');
+            select.innerHTML = '';
+            
+            if (services.length === 0) {
+                select.innerHTML = '<option value="">No services available. Create a service first.</option>';
+                return;
+            }
+            
+            services.forEach(service => {
+                const option = document.createElement('option');
+                option.value = service.serviceid;
+                option.textContent = `${service.name} ($${service.price})`;
+                select.appendChild(option);
+            });
+        }
+
+        // Handle add slot form
+        document.getElementById('add-slot-form').onsubmit = async function(e) {
+            e.preventDefault();
+            
+            const serviceId = document.getElementById('service-select').value;
+            const date = document.getElementById('slot-date').value;
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+            
+            if (!serviceId || !date || !startTime || !endTime) {
+                showOutput({error: 'All fields are required'});
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/availability', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${providerToken}`
+                    },
+                    body: JSON.stringify({
+                        service_id: parseInt(serviceId),
+                        date: date,
+                        start_time: startTime + ':00',
+                        end_time: endTime + ':00',
+                        is_available: true
+                    })
+                });
+                
+                const result = await response.json();
+                showOutput(result);
+                
+                if (result.success) {
+                    document.getElementById('add-slot-result').innerHTML = 
+                        `<p class="success">✅ Slot added successfully!</p>`;
+                    document.getElementById('add-slot-form').reset();
+                    // Refresh data
+                    loadProviderData();
+                } else {
+                    document.getElementById('add-slot-result').innerHTML = 
+                        `<p class="error">❌ Error: ${result.message}</p>`;
+                }
+            } catch (error) {
+                showOutput({error: error.message});
+            }
+        };
+
+        function switchTab(tabName) {
+            // Update tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Activate selected tab
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        function showAddServiceForm() {
+            // Simple alert for now - you can expand this
+            alert('Service creation form would appear here. Use the API endpoint: POST /api/services');
+        }
+
+        function logout() {
+            localStorage.removeItem('providerToken');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        function showOutput(data) {
+            document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+        }
+    </script>
+</body>
+</html>

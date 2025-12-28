@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - Booking System</title>
+    <style>
+        body { 
+            font-family: 'Arial', sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+        input:focus, select:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            background: #5a67d8;
+        }
+        .btn.secondary {
+            background: #48bb78;
+        }
+        .btn.secondary:hover {
+            background: #38a169;
+        }
+        .role-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .role-btn {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .role-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        .success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        .error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+        .links {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+        .links a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .links a:hover {
+            text-decoration: underline;
+        }
+        .demo-info {
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 25px;
+            font-size: 14px;
+            color: #4a5568;
+        }
+        .demo-info h3 {
+            margin-top: 0;
+            color: #2d3748;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Login to Booking System</h1>
+        
+        <div id="message" class="message"></div>
+        
+        <div class="role-selector">
+            <div class="role-btn active" onclick="selectRole('customer')">👤 Customer</div>
+            <div class="role-btn" onclick="selectRole('provider')">👨‍⚕️ Provider</div>
+        </div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" placeholder="Enter your email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Enter your password" required>
+            </div>
+            
+            <button type="submit" class="btn">Login</button>
+        </form>
+        
+        <button class="btn secondary" onclick="window.location.href='register.html'">
+            Create New Account
+        </button>
+        
+        <div class="links">
+            <p>Or go to: 
+                <a href="index.html">Home Page</a> | 
+                <a href="provider-dashboard.html">Provider Dashboard</a> | 
+                <a href="customer-dashboard.html">Customer Dashboard</a>
+            </p>
+        </div>
+        
+        <div class="demo-info">
+            <h3>Demo Accounts</h3>
+            <p><strong>Provider:</strong> provider@test.com / test123</p>
+            <p><strong>Customer:</strong> customer@test.com / test123</p>
+        </div>
+    </div>
+
+    <script>
+        let selectedRole = 'customer';
+        
+        function selectRole(role) {
+            selectedRole = role;
+            document.querySelectorAll('.role-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+        
+        document.getElementById('loginForm').onsubmit = async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+            
+            // Clear previous messages
+            messageDiv.style.display = 'none';
+            messageDiv.className = 'message';
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Store token and user info
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    // Show success message
+                    messageDiv.textContent = `✅ Login successful! Redirecting...`;
+                    messageDiv.className = 'message success';
+                    messageDiv.style.display = 'block';
+                    
+                    // Redirect based on role
+                    setTimeout(() => {
+                        if (data.user.role === 'provider') {
+                            window.location.href = 'provider-dashboard.html';
+                        } else {
+                            window.location.href = 'customer-dashboard.html';
+                        }
+                    }, 1500);
+                    
+                } else {
+                    messageDiv.textContent = `❌ ${data.message}`;
+                    messageDiv.className = 'message error';
+                    messageDiv.style.display = 'block';
+                }
+                
+            } catch (error) {
+                messageDiv.textContent = `❌ Error: ${error.message}`;
+                messageDiv.className = 'message error';
+                messageDiv.style.display = 'block';
+            }
+        };
+        
+        // Auto-fill demo accounts
+        document.getElementById('email').addEventListener('focus', function() {
+            if (this.value === '') {
+                if (selectedRole === 'provider') {
+                    this.value = 'provider@test.com';
+                    document.getElementById('password').value = 'test123';
+                } else {
+                    this.value = 'customer@test.com';
+                    document.getElementById('password').value = 'test123';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

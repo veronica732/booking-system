@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Booking System</title>
+    <style>
+        body { 
+            font-family: 'Arial', sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .auth-buttons {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .auth-btn {
+            display: inline-block;
+            padding: 12px 25px;
+            margin: 0 10px;
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .auth-btn.login {
+            background: #667eea;
+        }
+        .auth-btn.register {
+            background: #48bb78;
+        }
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 40px 0;
+        }
+        .dashboard-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 2px solid transparent;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .dashboard-card.provider {
+            border-color: #4a6fa5;
+        }
+        .dashboard-card.customer {
+            border-color: #2ecc71;
+        }
+        .icon {
+            font-size: 50px;
+            margin-bottom: 20px;
+        }
+        .provider .icon { color: #4a6fa5; }
+        .customer .icon { color: #2ecc71; }
+        h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .description {
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #333;
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        .btn.provider-btn {
+            background: #4a6fa5;
+        }
+        .btn.customer-btn {
+            background: #2ecc71;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .api-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 40px;
+        }
+        .api-info h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .endpoints {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .endpoint {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success-check {
+            color: #2ecc71;
+            font-size: 20px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Booking System</h1>
+        <p class="subtitle">A complete service booking platform with provider and customer dashboards</p>
+        
+        <div class="auth-buttons">
+            <a href="login.html" class="auth-btn login">🔐 Login</a>
+            <a href="register.html" class="auth-btn register">✨ Register</a>
+        </div>
+        
+        <div class="dashboard-grid">
+            <div class="dashboard-card provider">
+                <div class="icon">👨‍⚕️</div>
+                <h2>Provider Dashboard</h2>
+                <p class="description">
+                    Manage your services, set availability, and view appointments.
+                    Perfect for service providers who want to manage their schedule.
+                </p>
+                <a href="provider-dashboard.html" class="btn provider-btn">Go to Provider Dashboard</a>
+            </div>
+            
+            <div class="dashboard-card customer">
+                <div class="icon">��</div>
+                <h2>Customer Dashboard</h2>
+                <p class="description">
+                    Browse available services, book appointments, and manage your bookings.
+                    For customers looking to book services easily.
+                </p>
+                <a href="customer-dashboard.html" class="btn customer-btn">Go to Customer Dashboard</a>
+            </div>
+        </div>
+        
+        <div class="api-info">
+            <h3>✅ System Features</h3>
+            <div class="endpoints">
+                <div class="endpoint">
+                    <span class="success-check">✓</span> User Authentication
+                </div>
+                <div class="endpoint">
+                    <span class="success-check">✓</span> Role-based Access
+                </div>
+                <div class="endpoint">
+                    <span class="success-check">✓</span> Service Management
+                </div>
+                <div class="endpoint">
+                    <span class="success-check">✓</span> Availability Scheduling
+                </div>
+                <div class="endpoint">
+                    <span class="success-check">✓</span> Booking System
+                </div>
+                <div class="endpoint">
+                    <span class="success-check">✓</span> Real-time Updates
+                </div>
+                <div class="endpoint">
+                    <span class="success-check">✓</span> PostgreSQL Database
+                </div>
+                <div class="endpoint">
+                    <span class="success-check">✓</span> RESTful API
+                </div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px; color: #666; font-size: 14px;">
+            <p>Server running on: <strong>http://localhost:3000</strong></p>
+            <p>Test Accounts: 
+                <strong>provider@test.com</strong> / test123 | 
+                <strong>customer@test.com</strong> / test123
+            </p>
+        </div>
+    </div>
+</body>
+</html>
