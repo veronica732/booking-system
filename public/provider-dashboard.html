@@ -141,168 +141,115 @@ Click tabs to see actions...
         </div>
     </div>
 
-    <script>
+        <script>
         let providerToken = '';
         let providerId = '';
         let providerServices = [];
 
-        // Check if already logged in
         window.onload = function() {
             const savedToken = localStorage.getItem('providerToken');
             if (savedToken) {
                 providerToken = savedToken;
+                try {
+                    const payload = JSON.parse(atob(savedToken.split('.')[1]));
+                    providerId = payload.userId;
+                    document.getElementById('provider-info').innerHTML = 'Welcome, Provider ID: ' + providerId;
+                } catch (e) {
+                    console.log('Token error:', e);
+                }
                 loadProviderData();
             } else {
-                // Try to auto-login with existing provider
-                loginProvider();
+                alert('Please login first');
+                window.location.href = '/login.html';
             }
         };
 
-        async function loginProvider() {
-            try {
-                const response = await fetch('http://localhost:3000/api/auth/login', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        email: 'provider@test.com',
-                        password: 'test123'
-                    })
-                });
-                
-                const data = await response.json();
-                showOutput(data);
-                
-                if (data.success) {
-                    providerToken = data.token;
-                    providerId = data.user.id;
-                    localStorage.setItem('providerToken', providerToken);
-                    document.getElementById('provider-info').innerHTML = 
-                        `Welcome, <strong>${data.user.name}</strong> | ${data.user.email}`;
-                    loadProviderData();
-                }
-            } catch (error) {
-                showOutput({error: error.message});
-            }
-        }
-
         async function loadProviderData() {
             try {
-                // Load appointments
                 const appsRes = await fetch('http://localhost:3000/api/bookings/provider-appointments', {
-                    headers: {'Authorization': `Bearer ${providerToken}`}
+                    headers: {'Authorization': 'Bearer ' + providerToken}
                 });
                 const appointments = await appsRes.json();
-                
                 if (appointments.success) {
-                    document.getElementById('appointment-count').innerHTML = 
-                        `<span class="success">${appointments.count} appointments</span>`;
+                    document.getElementById('appointment-count').innerHTML = appointments.count + ' appointments';
                     displayAppointments(appointments.appointments);
                 }
 
-                // Load provider's services
                 const servicesRes = await fetch('http://localhost:3000/api/services/provider', {
-                    headers: {'Authorization': `Bearer ${providerToken}`}
+                    headers: {'Authorization': 'Bearer ' + providerToken}
                 });
                 const services = await servicesRes.json();
-                
                 if (services.success) {
                     providerServices = services.services;
-                    document.getElementById('service-count').innerHTML = 
-                        `<span class="success">${services.count} services</span>`;
+                    document.getElementById('service-count').innerHTML = services.count + ' services';
                     displayServices(services.services);
                     populateServiceSelect(services.services);
                 }
 
-                // Load availability
                 const availRes = await fetch('http://localhost:3000/api/availability/provider', {
-                    headers: {'Authorization': `Bearer ${providerToken}`}
+                    headers: {'Authorization': 'Bearer ' + providerToken}
                 });
                 const availability = await availRes.json();
-                
                 if (availability.success) {
-                    document.getElementById('slot-count').innerHTML = 
-                        `<span class="success">${availability.count} slots</span>`;
+                    document.getElementById('slot-count').innerHTML = availability.count + ' slots';
                     displayAvailability(availability.availability);
                 }
-
             } catch (error) {
-                showOutput({error: error.message});
+                console.log('Error:', error);
+                if (error.message.includes('401')) {
+                    localStorage.removeItem('providerToken');
+                    window.location.href = '/login.html';
+                }
             }
         }
 
         function displayAppointments(appointments) {
             const container = document.getElementById('appointments-list');
-            if (appointments.length === 0) {
-                container.innerHTML = '<p>No appointments yet.</p>';
+            if (!appointments || appointments.length === 0) {
+                container.innerHTML = '<p>No appointments</p>';
                 return;
             }
-
-            let html = '<table>';
-            html += '<tr><th>Customer</th><th>Service</th><th>Date</th><th>Time</th><th>Status</th></tr>';
-            
+            let html = '<table><tr><th>Customer</th><th>Service</th><th>Date</th><th>Time</th><th>Status</th></tr>';
             appointments.forEach(apt => {
-                html += `
-                    <tr>
-                        <td>${apt.customer_name}<br><small>${apt.customer_email}</small></td>
-                        <td>${apt.service_name}<br><small>$${apt.price}</small></td>
-                        <td>${new Date(apt.booking_date).toLocaleDateString()}</td>
-                        <td>${apt.starttime} - ${apt.endtime}</td>
-                        <td><span class="success">${apt.status}</span></td>
-                    </tr>
-                `;
+                html += '<tr><td>' + apt.customer_name + '<br><small>' + apt.customer_email + '</small></td>';
+                html += '<td>' + apt.service_name + '<br><small>$' + apt.price + '</small></td>';
+                html += '<td>' + new Date(apt.booking_date).toLocaleDateString() + '</td>';
+                html += '<td>' + apt.starttime + ' - ' + apt.endtime + '</td>';
+                html += '<td>' + apt.status + '</td></tr>';
             });
-            
             html += '</table>';
             container.innerHTML = html;
         }
 
         function displayAvailability(slots) {
             const container = document.getElementById('availability-list');
-            if (slots.length === 0) {
-                container.innerHTML = '<p>No availability slots set. Add some!</p>';
+            if (!slots || slots.length === 0) {
+                container.innerHTML = '<p>No slots</p>';
                 return;
             }
-
-            let html = '<table>';
-            html += '<tr><th>Service</th><th>Date</th><th>Time</th><th>Price</th><th>Status</th></tr>';
-            
+            let html = '<table><tr><th>Service</th><th>Date</th><th>Time</th><th>Status</th></tr>';
             slots.forEach(slot => {
-                html += `
-                    <tr>
-                        <td>${slot.service_name}</td>
-                        <td>${new Date(slot.date).toLocaleDateString()}</td>
-                        <td>${slot.starttime} - ${slot.endtime}</td>
-                        <td>$${slot.price}</td>
-                        <td>${slot.isavailable ? '<span class="success">Available</span>' : '<span class="error">Booked</span>'}</td>
-                    </tr>
-                `;
+                html += '<tr><td>' + (slot.service_name || 'N/A') + '</td>';
+                html += '<td>' + new Date(slot.date).toLocaleDateString() + '</td>';
+                html += '<td>' + slot.starttime + ' - ' + slot.endtime + '</td>';
+                html += '<td>' + (slot.isavailable ? 'Available' : 'Booked') + '</td></tr>';
             });
-            
             html += '</table>';
             container.innerHTML = html;
         }
 
         function displayServices(services) {
             const container = document.getElementById('services-list');
-            if (services.length === 0) {
-                container.innerHTML = '<p>No services yet. Add your first service!</p>';
+            if (!services || services.length === 0) {
+                container.innerHTML = '<p>No services. Add your first service!</p>';
                 return;
             }
-
-            let html = '<table>';
-            html += '<tr><th>Service Name</th><th>Description</th><th>Price</th><th>Location</th></tr>';
-            
+            let html = '<table><tr><th>Service Name</th><th>Description</th><th>Price</th></tr>';
             services.forEach(service => {
-                html += `
-                    <tr>
-                        <td><strong>${service.name}</strong></td>
-                        <td>${service.description}</td>
-                        <td>$${service.price}</td>
-                        <td>${service.location_name || 'Not specified'}</td>
-                    </tr>
-                `;
+                html += '<tr><td>' + service.name + '</td>';
+                html += '<td>' + service.description + '</td>';
+                html += '<td>$' + service.price + '</td></tr>';
             });
-            
             html += '</table>';
             container.innerHTML = html;
         }
@@ -310,97 +257,90 @@ Click tabs to see actions...
         function populateServiceSelect(services) {
             const select = document.getElementById('service-select');
             select.innerHTML = '';
-            
-            if (services.length === 0) {
-                select.innerHTML = '<option value="">No services available. Create a service first.</option>';
+            if (!services || services.length === 0) {
+                select.innerHTML = '<option value="">No services</option>';
                 return;
             }
-            
             services.forEach(service => {
                 const option = document.createElement('option');
                 option.value = service.serviceid;
-                option.textContent = `${service.name} ($${service.price})`;
+                option.textContent = service.name + ' ($' + service.price + ')';
                 select.appendChild(option);
             });
         }
 
-        // Handle add slot form
+        function showAddServiceForm() {
+            const serviceData = {
+                name: prompt('Service name:'),
+                description: prompt('Description:'),
+                price: prompt('Price:'),
+                duration: prompt('Duration (minutes):')
+            };
+            
+            if (serviceData.name && serviceData.description && serviceData.price && serviceData.duration) {
+                fetch('http://localhost:3000/api/services', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + providerToken
+                    },
+                    body: JSON.stringify(serviceData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.success ? 'Service added!' : 'Error: ' + data.message);
+                    if (data.success) loadProviderData();
+                });
+            }
+        }
+
         document.getElementById('add-slot-form').onsubmit = async function(e) {
             e.preventDefault();
-            
             const serviceId = document.getElementById('service-select').value;
             const date = document.getElementById('slot-date').value;
             const startTime = document.getElementById('start-time').value;
             const endTime = document.getElementById('end-time').value;
             
-            if (!serviceId || !date || !startTime || !endTime) {
-                showOutput({error: 'All fields are required'});
-                return;
-            }
-            
-            try {
-                const response = await fetch('http://localhost:3000/api/availability', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${providerToken}`
-                    },
-                    body: JSON.stringify({
-                        service_id: parseInt(serviceId),
-                        date: date,
-                        start_time: startTime + ':00',
-                        end_time: endTime + ':00',
-                        is_available: true
-                    })
-                });
-                
-                const result = await response.json();
-                showOutput(result);
-                
-                if (result.success) {
-                    document.getElementById('add-slot-result').innerHTML = 
-                        `<p class="success">✅ Slot added successfully!</p>`;
-                    document.getElementById('add-slot-form').reset();
-                    // Refresh data
-                    loadProviderData();
-                } else {
-                    document.getElementById('add-slot-result').innerHTML = 
-                        `<p class="error">❌ Error: ${result.message}</p>`;
+            if (serviceId && date && startTime && endTime) {
+                try {
+                    const response = await fetch('http://localhost:3000/api/availability', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + providerToken
+                        },
+                        body: JSON.stringify({
+                            service_id: serviceId,
+                            date: date,
+                            start_time: startTime,
+                            end_time: endTime
+                        })
+                    });
+                    const result = await response.json();
+                    alert(result.success ? 'Slot added!' : 'Error: ' + result.message);
+                    if (result.success) loadProviderData();
+                } catch (error) {
+                    alert('Error: ' + error.message);
                 }
-            } catch (error) {
-                showOutput({error: error.message});
             }
         };
 
         function switchTab(tabName) {
-            // Update tabs
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.content').forEach(content => {
-                content.classList.remove('active');
-            });
-            
-            // Activate selected tab
-            event.target.classList.add('active');
+            document.querySelectorAll('.content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tabName).classList.add('active');
-        }
-
-        function showAddServiceForm() {
-            // Simple alert for now - you can expand this
-            alert('Service creation form would appear here. Use the API endpoint: POST /api/services');
+            event.target.classList.add('active');
         }
 
         function logout() {
             localStorage.removeItem('providerToken');
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = 'login.html';
+            window.location.href = '/login.html';
         }
 
         function showOutput(data) {
             document.getElementById('output').textContent = JSON.stringify(data, null, 2);
         }
     </script>
+       
 </body>
 </html>
