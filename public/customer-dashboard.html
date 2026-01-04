@@ -222,39 +222,22 @@ Click tabs to see actions...
             const savedToken = localStorage.getItem('customerToken');
             if (savedToken) {
                 customerToken = savedToken;
+                // Decode token to get customer info
+                try {
+                    const payload = JSON.parse(atob(savedToken.split('.')[1]));
+                    customerId = payload.userId;
+                    document.getElementById('customer-info').innerHTML = 
+                        `Welcome, Customer ID: ${customerId}`;
+                } catch (e) {
+                    console.error('Token invalid:', e);
+                }
                 loadCustomerData();
             } else {
-                // Try to auto-login with existing customer
-                loginCustomer();
+                // Redirect to login page instead of auto-login
+                alert('Please login first to access the customer dashboard.');
+                window.location.href = '/login.html';
             }
         };
-
-        async function loginCustomer() {
-            try {
-                const response = await fetch('http://localhost:3000/api/auth/login', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        email: 'customer@test.com',
-                        password: 'test123'
-                    })
-                });
-                
-                const data = await response.json();
-                showOutput(data);
-                
-                if (data.success) {
-                    customerToken = data.token;
-                    customerId = data.user.id;
-                    localStorage.setItem('customerToken', customerToken);
-                    document.getElementById('customer-info').innerHTML = 
-                        `Welcome, <strong>${data.user.name}</strong> | ${data.user.email}`;
-                    loadCustomerData();
-                }
-            } catch (error) {
-                showOutput({error: error.message});
-            }
-        }
 
         async function loadCustomerData() {
             try {
@@ -585,9 +568,7 @@ Click tabs to see actions...
 
         function logout() {
             localStorage.removeItem('customerToken');
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = 'login.html';
+            window.location.href = '/login.html';
         }
 
         function switchTab(tabName) {
