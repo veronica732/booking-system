@@ -22,6 +22,4 @@ A full-stack service booking platform with customer and provider dashboards.
 - Database: PostgreSQL
 - Deployment: Render
 
-## Author
-Group of Students
 
