@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const { testConnection, checkTables } = require('./config/database');
+const { pool } = require('./config/database');
 
 const app = express();
 
@@ -77,8 +77,13 @@ app.listen(PORT, async () => {
     console.log(`🗄️  Database: ${process.env.DB_NAME} (PostgreSQL)`);
     console.log(`📊 Dashboard: http://localhost:${PORT}/index.html`);
     
-    const connected = await testConnection();
-    if (connected) {
-        await checkTables();
+    // Test database connection
+try {
+    const client = await pool.connect();
+    console.log('✅ Database connection successful');
+    client.release();
+} catch (err) {
+    console.error('❌ Database connection failed:', err.message);
+}
     }
 });
