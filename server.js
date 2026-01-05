@@ -33,37 +33,25 @@ app.get('/', (req, res) => {
             services: '/api/services',
             availability: '/api/availability',
             bookings: '/api/bookings',
-            health: '/health',
-            tables: '/api/tables',
-            dashboard: '/index.html'
+            health: '/health'
         }
     });
 });
 
-// Health check with database test
+// Health check
 app.get('/health', async (req, res) => {
-    const dbStatus = await testConnection();
-    res.json({
-        status: 'healthy',
-        database: dbStatus ? 'connected' : 'disconnected',
-        timestamp: new Date().toISOString(),
-        system: 'PostgreSQL'
-    });
-});
-
-// List all tables in database
-app.get('/api/tables', async (req, res) => {
     try {
-        const tables = await checkTables();
+        await pool.query('SELECT NOW()');
         res.json({
-            success: true,
-            database: process.env.DB_NAME,
-            tables: tables,
-            count: tables.length
+            status: 'healthy',
+            database: 'connected',
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV || 'development'
         });
     } catch (error) {
         res.status(500).json({
-            success: false,
+            status: 'unhealthy',
+            database: 'disconnected',
             error: error.message
         });
     }
@@ -71,19 +59,25 @@ app.get('/api/tables', async (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, async () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📁 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🗄️  Database: ${process.env.DB_NAME} (PostgreSQL)`);
-    console.log(`📊 Dashboard: http://localhost:${PORT}/index.html`);
-    
-    // Test database connection
-try {
-    const client = await pool.connect();
-    console.log('✅ Database connection successful');
-    client.release();
-} catch (err) {
-    console.error('❌ Database connection failed:', err.message);
-}
+
+const startServer = async () => {
+    try {
+        // Test database connection first
+        const client = await pool.connect();
+        console.log('✅ Database connection successful');
+        client.release();
+        
+        app.listen(PORT, () => {
+            console.log(`🚀 Server running on port ${PORT}`);
+            console.log(`📁 Environment: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`🌐 URL: ${process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`}`);
+        });
+        
+    } catch (err) {
+        console.error('❌ Database connection failed:', err.message);
+        console.error('Server cannot start without database connection');
+        process.exit(1);
     }
-});
+};
+
+startServer();
