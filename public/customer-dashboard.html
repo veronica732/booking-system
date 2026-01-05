@@ -242,7 +242,7 @@ Click tabs to see actions...
         async function loadCustomerData() {
             try {
                 // Load available slots
-                const slotsRes = await fetch('http://localhost:3000/api/bookings/available');
+                const slotsRes = await fetch('/api/bookings/available');
                 const slots = await slotsRes.json();
                 
                 if (slots.success) {
@@ -252,7 +252,7 @@ Click tabs to see actions...
                 }
 
                 // Load customer's bookings
-                const bookingsRes = await fetch('http://localhost:3000/api/bookings/my-bookings', {
+                const bookingsRes = await fetch('/api/bookings/my-bookings', {
                     headers: {'Authorization': `Bearer ${customerToken}`}
                 });
                 const bookings = await bookingsRes.json();
@@ -401,7 +401,7 @@ Click tabs to see actions...
             }
             
             try {
-                const response = await fetch('http://localhost:3000/api/bookings', {
+                const response = await fetch('/api/bookings', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -432,7 +432,7 @@ Click tabs to see actions...
             }
             
             try {
-                const response = await fetch('http://localhost:3000/api/bookings/cancel', {
+                const response = await fetch('/api/bookings/cancel', {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -467,7 +467,7 @@ Click tabs to see actions...
             
             // Load available slots for rescheduling
             try {
-                const response = await fetch('http://localhost:3000/api/bookings/available');
+                const response = await fetch('/api/bookings/available');
                 const data = await response.json();
                 
                 if (data.success) {
@@ -537,7 +537,7 @@ Click tabs to see actions...
             }
             
             try {
-                const response = await fetch('http://localhost:3000/api/bookings/reschedule', {
+                const response = await fetch('/api/bookings/reschedule', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',

@@ -152,7 +152,7 @@ Click tabs to see actions...
 
         async function loginCustomer() {
             try {
-                const response = await fetch('http://localhost:3000/api/auth/login', {
+                const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
@@ -180,7 +180,7 @@ Click tabs to see actions...
         async function loadCustomerData() {
             try {
                 // Load available slots
-                const slotsRes = await fetch('http://localhost:3000/api/bookings/available');
+                const slotsRes = await fetch('/api/bookings/available');
                 const slots = await slotsRes.json();
                 
                 if (slots.success) {
@@ -190,7 +190,7 @@ Click tabs to see actions...
                 }
 
                 // Load customer's bookings
-                const bookingsRes = await fetch('http://localhost:3000/api/bookings/my-bookings', {
+                const bookingsRes = await fetch('/api/bookings/my-bookings', {
                     headers: {'Authorization': `Bearer ${customerToken}`}
                 });
                 const bookings = await bookingsRes.json();
@@ -334,7 +334,7 @@ Click tabs to see actions...
             }
             
             try {
-                const response = await fetch('http://localhost:3000/api/bookings', {
+                const response = await fetch('/api/bookings', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -365,7 +365,7 @@ Click tabs to see actions...
             }
             
             try {
-                const response = await fetch('http://localhost:3000/api/bookings/cancel', {
+                const response = await fetch('/api/bookings/cancel', {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
