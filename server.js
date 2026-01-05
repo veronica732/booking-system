@@ -8,7 +8,7 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));  // ← ADD THIS LINE
+app.use(express.static('public'));
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -77,7 +77,6 @@ app.listen(PORT, async () => {
     console.log(`🗄️  Database: ${process.env.DB_NAME} (PostgreSQL)`);
     console.log(`📊 Dashboard: http://localhost:${PORT}/index.html`);
     
-    // Test database connection on startup
     const connected = await testConnection();
     if (connected) {
         await checkTables();

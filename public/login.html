@@ -19,7 +19,7 @@
             padding: 40px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             max-width: 400px;
-            width: 100%;
+            width: '100%';
         }
         h1 {
             color: #333;
@@ -207,32 +207,50 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Store token and user info
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    
-                    // Show success message
-                    messageDiv.textContent = `✅ Login successful! Redirecting...`;
-                    messageDiv.className = 'message success';
-                    messageDiv.style.display = 'block';
-                    
-                    // Redirect based on role
-                    setTimeout(() => {
-                        if (data.user.role === 'provider') {
+                    // Store token based on user role
+                    if (data.user.role === 'provider') {
+                        localStorage.setItem('providerToken', data.token);
+                        localStorage.setItem('providerUser', JSON.stringify(data.user));
+                        // Show success message
+                        messageDiv.textContent = '✅ Login successful! Redirecting...';
+                        messageDiv.className = 'message success';
+                        messageDiv.style.display = 'block';
+                        // Redirect after a short delay
+                        setTimeout(() => {
                             window.location.href = 'provider-dashboard.html';
-                        } else {
+                        }, 1000);
+                    } else if (data.user.role === 'customer') {
+                        localStorage.setItem('customerToken', data.token);
+                        localStorage.setItem('customerUser', JSON.stringify(data.user));
+                        // Show success message
+                        messageDiv.textContent = '✅ Login successful! Redirecting...';
+                        messageDiv.className = 'message success';
+                        messageDiv.style.display = 'block';
+                        // Redirect after a short delay
+                        setTimeout(() => {
                             window.location.href = 'customer-dashboard.html';
-                        }
-                    }, 1500);
-                    
+                        }, 1000);
+                    } else {
+                        // Default redirect (for admin or other roles)
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                        // Show success message
+                        messageDiv.textContent = '✅ Login successful! Redirecting...';
+                        messageDiv.className = 'message success';
+                        messageDiv.style.display = 'block';
+                        // Redirect after a short delay
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1000);
+                    }
                 } else {
-                    messageDiv.textContent = `❌ ${data.message}`;
+                    // Show error message
+                    messageDiv.textContent = '❌ ' + data.message;
                     messageDiv.className = 'message error';
                     messageDiv.style.display = 'block';
                 }
-                
             } catch (error) {
-                messageDiv.textContent = `❌ Error: ${error.message}`;
+                messageDiv.textContent = '❌ Network error. Please try again.';
                 messageDiv.className = 'message error';
                 messageDiv.style.display = 'block';
             }

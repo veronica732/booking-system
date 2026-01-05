@@ -1,26 +1,27 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
-const { setAvailability, getProviderAvailability } = require('../controllers/availabilityController');
+const {
+    setAvailability,
+    getProviderAvailability,
+    getServiceAvailability,
+    updateAvailability,
+    deleteAvailability
+} = require('../controllers/availabilityController');
 
-// @route   POST /api/availability
-// @desc    Set provider availability (PROVIDER ONLY)
-// @access  Private/Provider
+// Set availability (Provider only)
 router.post('/', authenticateToken, setAvailability);
 
-// @route   GET /api/availability/provider
-// @desc    Get provider's availability slots
-// @access  Private/Provider
+// Get provider's own availability (Provider only)
 router.get('/provider', authenticateToken, getProviderAvailability);
 
-// @route   GET /api/availability/test
-// @desc    Test route
-// @access  Public
-router.get('/test', (req, res) => {
-    res.json({ 
-        message: 'Availability route is working',
-        timestamp: new Date().toISOString()
-    });
-});
+// Get availability for a service (Public)
+router.get('/service/:service_id', getServiceAvailability);
+
+// Update availability slot (Provider only)
+router.put('/:id', authenticateToken, updateAvailability);
+
+// Delete availability slot (Provider only)
+router.delete('/:id', authenticateToken, deleteAvailability);
 
 module.exports = router;

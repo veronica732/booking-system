@@ -226,9 +226,11 @@ const getProviderAppointments = async (req, res) => {
     }
 };
 
-// Cancel a booking - FIXED VERSION
+// Cancel a booking - NO DATE RESTRICTIONS
 const cancelBooking = async (req, res) => {
     try {
+        console.log('CANCEL REQUEST - User:', req.user.userId, 'Body:', req.body);
+        
         const { booking_id } = req.body;
         const userId = req.user.userId;
 
@@ -242,7 +244,7 @@ const cancelBooking = async (req, res) => {
         // Start transaction
         await pool.query('BEGIN');
 
-        // Get booking details and verify ownership - SIMPLIFIED QUERY
+        // Get booking details and verify ownership
         const bookingQuery = `
             SELECT b.* 
             FROM bookings b
@@ -251,6 +253,7 @@ const cancelBooking = async (req, res) => {
         `;
         
         const bookingResult = await pool.query(bookingQuery, [booking_id, userId]);
+        console.log('Booking found:', bookingResult.rows[0]);
 
         if (bookingResult.rows.length === 0) {
             await pool.query('ROLLBACK');
@@ -262,32 +265,24 @@ const cancelBooking = async (req, res) => {
 
         const booking = bookingResult.rows[0];
 
-        // Check if booking can be cancelled (e.g., not in the past)
-        const bookingDate = new Date(booking.date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if (bookingDate < today) {
-            await pool.query('ROLLBACK');
-            return res.status(400).json({
-                success: false,
-                message: 'Cannot cancel past bookings'
-            });
-        }
-
+        // NO DATE CHECK - allow cancelling any booking
+        
         // Find the associated availability slot
         const availabilityQuery = `
             SELECT a.availabilityid 
             FROM availability a
             WHERE a.serviceid = $1 AND a.date = $2
-            FOR UPDATE
         `;
         
         const availabilityResult = await pool.query(availabilityQuery, [booking.serviceid, booking.date]);
         const availabilityId = availabilityResult.rows[0]?.availabilityid;
+        console.log('Availability slot:', availabilityId);
 
-        // Delete the booking
-        await pool.query('DELETE FROM bookings WHERE bookingid = $1', [booking_id]);
+        // Update booking status to cancelled
+        await pool.query(
+            'UPDATE bookings SET status = $1 WHERE bookingid = $2',
+            ['cancelled', booking_id]
+        );
 
         // Make the availability slot available again if it exists
         if (availabilityId) {
@@ -300,6 +295,7 @@ const cancelBooking = async (req, res) => {
         // Commit transaction
         await pool.query('COMMIT');
 
+        console.log('Cancellation successful');
         res.json({
             success: true,
             message: 'Booking cancelled successfully',
@@ -313,6 +309,7 @@ const cancelBooking = async (req, res) => {
     } catch (error) {
         await pool.query('ROLLBACK').catch(() => {});
         console.error('Cancel booking error:', error);
+        console.error('Error stack:', error.stack);
         res.status(500).json({
             success: false,
             message: 'Server error during cancellation',
@@ -320,8 +317,7 @@ const cancelBooking = async (req, res) => {
         });
     }
 };
-
-// Reschedule a booking
+// Reschedule a booking - WITHOUT PAST BOOKING CHECK
 const rescheduleBooking = async (req, res) => {
     try {
         const { booking_id, new_availability_id } = req.body;
@@ -357,20 +353,9 @@ const rescheduleBooking = async (req, res) => {
 
         const oldBooking = bookingResult.rows[0];
 
-        // 2. Check if booking can be rescheduled (not in the past)
-        const bookingDate = new Date(oldBooking.date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if (bookingDate < today) {
-            await pool.query('ROLLBACK');
-            return res.status(400).json({
-                success: false,
-                message: 'Cannot reschedule past bookings'
-            });
-        }
-
-        // 3. Check if new availability slot exists and is available
+        // DATE CHECK REMOVED - Allow rescheduling past bookings
+        
+        // 2. Check if new availability slot exists and is available
         const newSlotQuery = `
             SELECT a.*, s.serviceid as slot_service_id
             FROM availability a
@@ -391,7 +376,7 @@ const rescheduleBooking = async (req, res) => {
 
         const newSlot = newSlotResult.rows[0];
 
-        // 4. Verify the new slot is for the same service (optional check)
+        // 3. Verify the new slot is for the same service (optional check)
         if (oldBooking.serviceid !== newSlot.slot_service_id) {
             await pool.query('ROLLBACK');
             return res.status(400).json({
@@ -400,7 +385,7 @@ const rescheduleBooking = async (req, res) => {
             });
         }
 
-        // 5. Find the old availability slot
+        // 4. Find the old availability slot
         const oldAvailabilityQuery = `
             SELECT a.availabilityid 
             FROM availability a
@@ -411,7 +396,7 @@ const rescheduleBooking = async (req, res) => {
         const oldAvailabilityResult = await pool.query(oldAvailabilityQuery, [oldBooking.serviceid, oldBooking.date]);
         const oldAvailabilityId = oldAvailabilityResult.rows[0]?.availabilityid;
 
-        // 6. Update the booking with new date
+        // 5. Update the booking with new date
         const updateBookingQuery = `
             UPDATE bookings 
             SET date = $1
@@ -421,7 +406,7 @@ const rescheduleBooking = async (req, res) => {
         
         const updatedBooking = await pool.query(updateBookingQuery, [newSlot.date, booking_id]);
 
-        // 7. Make old slot available again
+        // 6. Make old slot available again
         if (oldAvailabilityId) {
             await pool.query(
                 'UPDATE availability SET isavailable = true WHERE availabilityid = $1',
@@ -429,7 +414,7 @@ const rescheduleBooking = async (req, res) => {
             );
         }
 
-        // 8. Make new slot unavailable
+        // 7. Make new slot unavailable
         await pool.query(
             'UPDATE availability SET isavailable = false WHERE availabilityid = $1',
             [new_availability_id]
